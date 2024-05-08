@@ -1,0 +1,127 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { Navbar } from "../../components/Navbar.jsx";
+import { Footer } from "../../components/Footer.jsx";
+import "../../styles/Theme.css";
+import "../../styles/Diagonals.css";
+
+---
+
+<Layout title="Albgott">
+  <Navbar client:load />
+  <div class="w-full flex justify-center pt-10">
+    <div
+      class="w-full md:w-[900px] xl:w-[1000px] flex flex-col justify-start items-center pt-16 md:pt-20 lg:pt-24 text-center min-h-screen gap-10"
+    >
+      <div
+        class="text-3xl sm:text-3xl lg:text-4xl xl:text-4xl font-bold tracking-wide text-white px-8 sm:px-8 md:px-20 lg:px-4 text-center "
+      >
+        <span>Create an account</span>
+      </div>
+
+
+      <form class="flex flex-col text-lg font-medium gap-4 text-customDark3" >
+        <div class="flex flex-col items-start gap-1">
+          <p>Email:</p>
+          <input id="email" class="px-6 py-2 rounded-full " placeholder="Enter email" name="email" type="email"/>
+          <p id="emailError" class=" text-red-600 text-sm font-normal hidden">Should introduce a valid email.</p>
+        </div>
+        <div class="flex flex-col items-start gap-1">
+          <p>Workspace:</p>
+          <input id="workspace" class="px-6 py-2 rounded-full [invalid]:border" placeholder="Enter workspace" name="workspace" />
+          <span class="ml-4 font-light text-xs">Eg: workspace.albgott.com</span>
+          <p id="workspaceLeghtError" class=" text-red-600 text-sm font-normal hidden">Workspace name must have at least 4 characters.</p>
+          <p id="workspaceUsedError" class=" text-red-600 text-sm font-normal hidden">Workspace name not available.</p>
+        </div>
+        <button id="button" class="font-semibold px-6 py-2 rounded-full hover:bg-customDark2 bg-customDark3 text-customAmber2">Continue</button>
+        <p id="generalError" class=" text-red-600 text-sm font-normal hidden">Something went wrong. Comeback latter</p>
+      </form>
+
+
+
+      <p class="text-white">
+        Already registered? <a class="hover:text-customDark3" href="/auth/login"
+          >Log in</a>
+      </p>
+    </div>
+  </div>
+  <Footer />
+</Layout>
+
+<script>
+  const emailInput: HTMLInputElement  = document.getElementById("email") as HTMLInputElement;
+  const workspaceInput: HTMLInputElement  = document.getElementById("workspace") as HTMLInputElement;
+  const emailError  = document.getElementById("emailError");
+  const generalError  = document.getElementById("generalError");
+  const workspaceLeghtError  = document.getElementById("workspaceLeghtError");
+  const workspaceUsedError  = document.getElementById("workspaceUsedError");
+  const form = document.querySelector('form');
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const isValidEmail = emailRegex.test(emailInput.value);
+  const isValidWorkspace = workspaceInput.value.length > 3;
+
+  generalError.style.display = 'none'
+
+  if (!isValidEmail || !isValidWorkspace) {
+    if(!isValidEmail){
+      emailInput.style.border = '2px solid red';
+      emailError.style.display = 'block'
+    } else {
+      emailInput.style.border = 'none';
+      emailError.style.display = 'none'
+    }
+
+    if(!isValidWorkspace){
+      workspaceInput.style.border = '2px solid red';
+      workspaceLeghtError.style.display = 'block'
+      workspaceUsedError.style.display = 'none'
+    } else {
+      workspaceInput.style.border = 'none';
+      workspaceLeghtError.style.display = 'none'
+      workspaceUsedError.style.display = 'none'
+    }
+    return;
+  } else {
+    emailInput.style.border = 'none';
+    emailError.style.display = 'none'
+    workspaceInput.style.border = 'none';
+    workspaceLeghtError.style.display = 'none'
+    workspaceUsedError.style.display = 'none'
+  }
+
+  const body = {
+    name: workspaceInput.value
+  };
+
+  try {
+    const response = await fetch("https://api.albgott.com/iam/tenants/check", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      generalError.style.display = 'block'
+      return
+    }
+
+    const result = await response.json();
+
+    if (!result.nameOnUse && result.nameAllowed) {
+      window.location.href = `https://${workspaceInput.value}.albgott.com/auth/signup?email=${emailInput.value}`;
+    } else {
+      workspaceInput.style.border = '2px solid red';
+      workspaceUsedError.style.display = 'block'
+    }
+
+  } catch (error) {
+    generalError.style.display = 'block'
+  }
+});
+</script>
